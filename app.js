@@ -80,6 +80,129 @@ if (videoBtn && videoModal && videoClose && videoFrame){
     }
   });
 }
+/* ---------- [เพิ่ม] 👤 ระบบ Login / Sign up (เชื่อมต่อ Firebase) ---------- */
+// 1. ข้อมูล Config ของ Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyDDeFjoZGjF5AFcp7U6uCAeLwZfdSBlOrM",
+  authDomain: "ai-powered-algebra-tiles.firebaseapp.com",
+  projectId: "ai-powered-algebra-tiles",
+  storageBucket: "ai-powered-algebra-tiles.firebasestorage.app",
+  messagingSenderId: "136685829806",
+  appId: "1:136685829806:web:ecf34b3928f6755709773f",
+  measurementId: "G-FM8QQ0PSDY"
+};
+
+// 2. เริ่มต้นการทำงานของ Firebase
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+
+// เลือก DOM Elements
+const loginBtn = document.getElementById('btn-login');
+const loginModal = document.getElementById('loginModal');
+const loginClose = document.getElementById('login-x');
+const authTitle = document.getElementById('auth-title');
+const authToggleText = document.getElementById('auth-toggle-text');
+const btnSubmitAuth = document.getElementById('btn-submit-auth');
+const authMessage = document.getElementById('auth-message');
+const emailInput = document.getElementById('auth-email');
+const passwordInput = document.getElementById('auth-password');
+
+let isLoginMode = true; 
+let currentUser = null; 
+
+if (loginBtn && loginModal && loginClose) {
+  
+  // 3. ติดตามสถานะการล็อกอินอัตโนมัติ
+  auth.onAuthStateChanged((user) => {
+    if (user) {
+      currentUser = user;
+      // เอาเฉพาะชื่อหน้า @ มาแสดง
+      loginBtn.textContent = '👤 ' + user.email.split('@')[0];
+      loginBtn.style.background = 'linear-gradient(180deg, #fef08a, #fde047)';
+    } else {
+      currentUser = null;
+      loginBtn.textContent = 'เข้าสู่ระบบ';
+      loginBtn.style.background = 'linear-gradient(180deg, #d4d4d8, #a1a1aa)';
+    }
+  });
+
+  // 4. ปุ่มเข้าสู่ระบบ / ออกจากระบบ
+  loginBtn.addEventListener('click', () => {
+    if (currentUser) {
+      if (confirm('คุณต้องการออกจากระบบใช่หรือไม่?')) {
+        auth.signOut();
+      }
+    } else {
+      openModal(loginModal);
+    }
+  });
+  
+  loginClose.addEventListener('click', () => {
+    closeModal(loginModal);
+    authMessage.textContent = ''; 
+  });
+
+  // 5. สลับโหมด เข้าสู่ระบบ / สมัครสมาชิก
+  authToggleText.addEventListener('click', () => {
+    isLoginMode = !isLoginMode;
+    authMessage.textContent = '';
+    if (isLoginMode) {
+      authTitle.textContent = 'เข้าสู่ระบบ (Login)';
+      btnSubmitAuth.textContent = 'เข้าสู่ระบบ';
+      authToggleText.innerHTML = 'ยังไม่มีบัญชีใช่ไหม? <span style="text-decoration: underline; font-weight: bold;">สมัครสมาชิกที่นี่</span>';
+    } else {
+      authTitle.textContent = 'สมัครสมาชิก (Sign Up)';
+      btnSubmitAuth.textContent = 'สร้างบัญชีใหม่';
+      authToggleText.innerHTML = 'มีบัญชีอยู่แล้ว? <span style="text-decoration: underline; font-weight: bold;">เข้าสู่ระบบที่นี่</span>';
+    }
+  });
+
+  // 6. กดปุ่มเพื่อ Login หรือ Sign up
+  btnSubmitAuth.addEventListener('click', () => {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+
+    if (!email || !password) {
+      authMessage.textContent = 'กรุณากรอกอีเมลและรหัสผ่านให้ครบถ้วน';
+      authMessage.style.color = '#dc2626';
+      return;
+    }
+
+    authMessage.style.color = '#16a34a';
+
+    if (isLoginMode) {
+      authMessage.textContent = 'กำลังตรวจสอบข้อมูล...';
+      auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+          closeModal(loginModal);
+          emailInput.value = ''; passwordInput.value = '';
+          authMessage.textContent = '';
+        })
+        .catch((error) => {
+          authMessage.style.color = '#dc2626';
+          authMessage.textContent = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+        });
+    } else {
+      authMessage.textContent = 'กำลังสร้างบัญชีผู้ใช้...';
+      auth.createUserWithEmailAndPassword(email, password)
+        .then(() => {
+          closeModal(loginModal);
+          emailInput.value = ''; passwordInput.value = '';
+          authMessage.textContent = '';
+        })
+        .catch((error) => {
+          authMessage.style.color = '#dc2626';
+          if (error.code === 'auth/email-already-in-use') {
+            authMessage.textContent = 'อีเมลนี้ถูกใช้งานแล้ว';
+          } else if (error.code === 'auth/weak-password') {
+            authMessage.textContent = 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร';
+          } else {
+            authMessage.textContent = 'เกิดข้อผิดพลาด: ' + error.message;
+          }
+        });
+    }
+  });
+}
 
 /* ====== (จบส่วนที่เพิ่ม) ส่วนอื่นของแอปยังทำงานเหมือนเดิม ====== */
 /*
