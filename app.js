@@ -706,7 +706,7 @@ newExample();
 render();
 
 /* ---------- [เพิ่ม] 🤖 ระบบ AI Chatbot Tutor (Gemini API) ---------- */
-const GEMINI_API_KEY = "AQ.Ab8RN6Ll4kvAdNt8ifXozBNAeSLXYccOKatvUfhUJ6LjzHzpzg"; 
+const GEMINI_API_KEY = "AQ.Ab8RN6LNwW4YOv6jtbS5D9E2oCLwFXu05-zZ1vp6Y92qj7ZhBg"; 
 
 const chatbotFab = document.getElementById('chatbot-fab');
 const chatbotWindow = document.getElementById('chatbot-window');
@@ -716,7 +716,6 @@ const chatbotSend = document.getElementById('chatbot-send');
 const chatbotMessages = document.getElementById('chatbot-messages');
 
 if (chatbotFab && chatbotWindow && chatbotClose) {
-  // สลับเปิด/ปิดหน้าต่างแชท
   chatbotFab.addEventListener('click', () => {
     chatbotWindow.style.display = chatbotWindow.style.display === 'none' ? 'flex' : 'none';
     if(chatbotWindow.style.display === 'flex') chatbotInput.focus();
@@ -726,31 +725,25 @@ if (chatbotFab && chatbotWindow && chatbotClose) {
   });
 }
 
-// ฟังก์ชันสำหรับเพิ่มข้อความลงในแชท
 function addChatMessage(sender, text) {
   const msgDiv = document.createElement('div');
   msgDiv.classList.add('msg', sender === 'user' ? 'user-msg' : 'ai-msg');
-  
-  // แปลง Markdown เบื้องต้นให้แสดงผลตัวหนาและขึ้นบรรทัดใหม่ได้
   let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
   msgDiv.innerHTML = formattedText;
-  
   chatbotMessages.appendChild(msgDiv);
-  chatbotMessages.scrollTop = chatbotMessages.scrollHeight; // เลื่อนจอลงล่างสุดอัตโนมัติ
+  chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
 }
-// ฟังก์ชันสำหรับส่งคำถามไปให้ Gemini API (แก้ไขวิธีส่ง Auth ให้ถูกต้อง)
+
 async function getGeminiResponse(userText) {
-  addChatMessage('user', userText); // แสดงข้อความของนักเรียน
-  chatbotInput.value = ''; // ล้างช่องพิมพ์
+  addChatMessage('user', userText);
+  chatbotInput.value = '';
   
-  // แสดง "กำลังคิด..."
   const loadingDiv = document.createElement('div');
   loadingDiv.classList.add('msg', 'ai-msg');
   loadingDiv.textContent = 'กำลังคิด... 🤔';
   chatbotMessages.appendChild(loadingDiv);
   chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
 
-  /* 🧠 Prompt Engineering: คำสั่งควบคุมติวเตอร์ AI */
   const systemInstruction = `
     คุณคือติวเตอร์คณิตศาสตร์ใจดี ชื่อ “AI-Buddy” หน้าที่ของคุณคือช่วยสอนนักเรียนเรื่อง "พหุนามและสมการเชิงเส้น" โดยใช้สื่อ "กระเบื้องพีชคณิต (Algebra Tiles)"
     กฎเหล็กของคุณ:
@@ -760,9 +753,6 @@ async function getGeminiResponse(userText) {
     4. ตอบสั้นๆ กระชับ เป็นกันเอง และให้กำลังใจเสมอ
   `;
   
-  const GEMINI_API_KEY = "AQ.Ab8RN6LNwW4YOv6jtbS5D9E2oCLwFXu05-zZ1vp6Y92qj7ZhBg";
-  
-  // 💡 เปลี่ยนมาใช้ URL ปกติ และส่ง Key ผ่าน Header 'x-goog-api-key' แทน
   const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`;
   
   try {
@@ -770,7 +760,7 @@ async function getGeminiResponse(userText) {
       method: 'POST',
       headers: { 
         'Content-Type': 'application/json',
-        'x-goog-api-key': GEMINI_API_KEY // แนบกุญแจผ่าน Header อย่างถูกต้อง
+        'x-goog-api-key': GEMINI_API_KEY 
       },
       body: JSON.stringify({
         contents: [{ parts: [{ text: userText }] }],
@@ -779,7 +769,7 @@ async function getGeminiResponse(userText) {
     });
     
     const data = await response.json();
-    chatbotMessages.removeChild(loadingDiv); // ลบข้อความกำลังคิดออก
+    chatbotMessages.removeChild(loadingDiv);
     
     if (response.ok && data.candidates && data.candidates.length > 0) {
       const aiText = data.candidates[0].content.parts[0].text;
@@ -796,9 +786,6 @@ async function getGeminiResponse(userText) {
   }
 }
 
-}
-
-// ตรวจจับการกดปุ่มส่งและการกด Enter
 if (chatbotSend && chatbotInput) {
   chatbotSend.addEventListener('click', () => {
     const text = chatbotInput.value.trim();
