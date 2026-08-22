@@ -1,203 +1,804 @@
-<!DOCTYPE html>
-<html lang="th">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>AI-Powered Algebra Tiles</title>
-  <link rel="stylesheet" href="styles.css">
-</head>
-<body>
-  <div class="toolbar" id="toolbar">
-    <strong class="brand">AI-Powered Algebra Tiles</strong>
-    <button class="btn" id="btn-reset">จัดระเบียบ</button>
-    <button class="btn" id="btn-delete">ลบ</button>
-    <button class="btn" id="btn-flip">พลิกด้าน</button>
-    <button class="btn" id="btn-zero">จับคู่เป็นศูนย์</button>
-    <button class="btn" id="btn-rotate">หมุน</button>
-    <button class="btn" id="btn-duplicate">เพิ่มจำนวน</button>
-    <button class="btn" id="btn-solution">เฉลย</button>
-    <button class="btn" id="btn-zoom-out" title="ซูมออก">🔍−</button>
-    <button class="btn" id="btn-zoom-in"  title="ซูมเข้า">🔍＋</button>
+/* app.js – keep original logic; add only handlers for 📖 & 💡 */
 
-    <select id="mode" title="เลือกเมนู">
-      <option value="int_add">การบวกจำนวนเต็ม</option>
-      <option value="int_sub">การลบจำนวนเต็ม</option>
-      <option value="int_mul">การคูณจำนวนเต็ม</option>
-      <option value="int_div">การหารจำนวนเต็ม</option>
-      <option value="poly_add">การบวกพหุนาม</option>
-      <option value="poly_sub">การลบพหุนาม</option>
-      <option value="poly_mul">การคูณพหุนาม</option>
-      <option value="poly_div">การหารพหุนาม</option>
-      <option value="solve_lin">การแก้สมการ</option>
-    </select>
+/* ====== โค้ดเดิมทั้งหมดของคุณอยู่ข้างล่าง/ข้างบนนี้ได้ ไม่ต้องแก้ ====== */
+/* ... (your existing logic for generating problems, checking answers, tiles, etc.) ... */
+
+/* ---------- [เพิ่ม] ตัวช่วยเปิด/ปิด modal เดิมและใหม่ ---------- */
+function openModal(el){ el.style.display = 'flex'; }
+function closeModal(el){ el.style.display = 'none'; }
+
+/* modal ที่มีอยู่แล้ว */
+const helpModal  = document.getElementById('help');
+const helpBtn    = document.getElementById('btn-help');
+const helpClose  = document.getElementById('help-x');
+
+if (helpBtn && helpModal && helpClose){
+  helpBtn.addEventListener('click', () => openModal(helpModal));
+  helpClose.addEventListener('click', () => closeModal(helpModal));
+}
+
+/* ---------- [เพิ่ม] 📖 ลิงก์แบบฝึก/แบบทดสอบ ---------- */
+const linksBtn   = document.getElementById('btn-links');
+const linksModal = document.getElementById('linksModal');
+const linksClose = document.getElementById('links-x');
+
+if (linksBtn && linksModal && linksClose){
+  linksBtn.addEventListener('click', () => openModal(linksModal));
+  linksClose.addEventListener('click', () => closeModal(linksModal));
+  // ปิดเมื่อคลิกนอกการ์ด
+  linksModal.addEventListener('click', (e)=>{
+    if (e.target === linksModal) closeModal(linksModal);
+  });
+}
+
+/* ---------- [เพิ่ม] 💡 วิดีโอ YouTube ต่อโหมด ---------- */
+const videoBtn   = document.getElementById('btn-video');
+const videoModal = document.getElementById('videoModal');
+const videoClose = document.getElementById('video-x');
+const videoFrame = document.getElementById('videoFrame');
+const modeSelect = document.getElementById('mode');
+
+const videoMap = {
+  'int_add' : 'https://www.youtube.com/embed/0ROjOr4SKfw?si=P-hJF3FrGg8eBrPK',
+  'int_sub' : 'https://www.youtube.com/embed/q33QILkQf0Y?si=SMlkYezioNI3mj-G',
+  'int_mul' : 'https://www.youtube.com/embed/TB9OXuxQdCs?si=x1D7xL2inIwjAl15',
+  'int_div' : 'https://www.youtube.com/embed/8LDpZCzUoIc?si=2Rero8EIH-pJw5Ao',
+  'poly_add': 'https://www.youtube.com/embed/KmLNBd2RECA?si=WZ_GkYNEREIIgvE3',
+  'poly_sub': 'https://www.youtube.com/embed/dNqJO3qpXXM?si=x8Culj2RYxrZOcn9',
+  'poly_mul': 'https://www.youtube.com/embed/ZWaF0BxXCZc?si=GQkAS96LTSV7t-qy',
+  'poly_div': 'https://www.youtube.com/embed/k1J6dBbQCis?si=g_bWLdlHy07Lmn-b',
+  'solve_lin': 'https://www.youtube.com/embed/88jWcKUn2LE?si=jcv2w-5Ys8eGPfgt'
+};
+
+function currentVideoUrl(){
+  const key = modeSelect ? modeSelect.value : 'int_add';
+  return videoMap[key] || videoMap['int_add'];
+}
+
+function stopVideo(){
+  if (!videoFrame) return;
+  // เคล็ดลับหยุดเล่น: รีเซ็ต src ชั่วคราว
+  const src = videoFrame.getAttribute('src');
+  videoFrame.setAttribute('src', '');
+  // หน่วง 0 แป๊บเดียว ป้องกันกระพริบ
+  requestAnimationFrame(()=> videoFrame.setAttribute('src', src || ''));
+}
+
+if (videoBtn && videoModal && videoClose && videoFrame){
+  videoBtn.addEventListener('click', () => {
+    videoFrame.src = currentVideoUrl();
+    openModal(videoModal);
+  });
+  videoClose.addEventListener('click', () => {
+    closeModal(videoModal);
+    stopVideo();
+  });
+  videoModal.addEventListener('click', (e)=>{
+    if (e.target === videoModal){
+      closeModal(videoModal);
+      stopVideo();
+    }
+  });
+}
+/* ---------- [เพิ่ม] 👤 ระบบ Login / Sign up (เชื่อมต่อ Firebase) ---------- */
+// 1. ข้อมูล Config ของ Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyDDeFjoZGjF5AFcp7U6uCAeLwZfdSBlOrM",
+  authDomain: "ai-powered-algebra-tiles.firebaseapp.com",
+  projectId: "ai-powered-algebra-tiles",
+  storageBucket: "ai-powered-algebra-tiles.firebasestorage.app",
+  messagingSenderId: "136685829806",
+  appId: "1:136685829806:web:ecf34b3928f6755709773f",
+  measurementId: "G-FM8QQ0PSDY"
+};
+
+// 2. เริ่มต้นการทำงานของ Firebase
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+
+// เลือก DOM Elements
+const loginBtn = document.getElementById('btn-login');
+const loginModal = document.getElementById('loginModal');
+const loginClose = document.getElementById('login-x');
+const authTitle = document.getElementById('auth-title');
+const authToggleText = document.getElementById('auth-toggle-text');
+const btnSubmitAuth = document.getElementById('btn-submit-auth');
+const authMessage = document.getElementById('auth-message');
+const emailInput = document.getElementById('auth-email');
+const passwordInput = document.getElementById('auth-password');
+
+let isLoginMode = true; 
+let currentUser = null; 
+
+if (loginBtn && loginModal && loginClose) {
+  
+  // 3. ติดตามสถานะการล็อกอินอัตโนมัติ
+  auth.onAuthStateChanged((user) => {
+    if (user) {
+      currentUser = user;
+      // เอาเฉพาะชื่อหน้า @ มาแสดง
+      loginBtn.textContent = '👤 ' + user.email.split('@')[0];
+      loginBtn.style.background = 'linear-gradient(180deg, #fef08a, #fde047)';
+    } else {
+      currentUser = null;
+      loginBtn.textContent = 'เข้าสู่ระบบ';
+      loginBtn.style.background = 'linear-gradient(180deg, #d4d4d8, #a1a1aa)';
+    }
+  });
+
+  // 4. ปุ่มเข้าสู่ระบบ / ออกจากระบบ
+  loginBtn.addEventListener('click', () => {
+    if (currentUser) {
+      if (confirm('คุณต้องการออกจากระบบใช่หรือไม่?')) {
+        auth.signOut();
+      }
+    } else {
+      openModal(loginModal);
+    }
+  });
+  
+  loginClose.addEventListener('click', () => {
+    closeModal(loginModal);
+    authMessage.textContent = ''; 
+  });
+
+  // 5. สลับโหมด เข้าสู่ระบบ / สมัครสมาชิก
+  authToggleText.addEventListener('click', () => {
+    isLoginMode = !isLoginMode;
+    authMessage.textContent = '';
+    if (isLoginMode) {
+      authTitle.textContent = 'เข้าสู่ระบบ (Login)';
+      btnSubmitAuth.textContent = 'เข้าสู่ระบบ';
+      authToggleText.innerHTML = 'ยังไม่มีบัญชีใช่ไหม? <span style="text-decoration: underline; font-weight: bold;">สมัครสมาชิกที่นี่</span>';
+    } else {
+      authTitle.textContent = 'สมัครสมาชิก (Sign Up)';
+      btnSubmitAuth.textContent = 'สร้างบัญชีใหม่';
+      authToggleText.innerHTML = 'มีบัญชีอยู่แล้ว? <span style="text-decoration: underline; font-weight: bold;">เข้าสู่ระบบที่นี่</span>';
+    }
+  });
+
+  // 6. กดปุ่มเพื่อ Login หรือ Sign up
+  btnSubmitAuth.addEventListener('click', () => {
+    const email = emailInput.value.trim();
+    const password = passwordInput.value.trim();
+
+    if (!email || !password) {
+      authMessage.textContent = 'กรุณากรอกอีเมลและรหัสผ่านให้ครบถ้วน';
+      authMessage.style.color = '#dc2626';
+      return;
+    }
+
+    authMessage.style.color = '#16a34a';
+
+    if (isLoginMode) {
+      authMessage.textContent = 'กำลังตรวจสอบข้อมูล...';
+      auth.signInWithEmailAndPassword(email, password)
+        .then(() => {
+          closeModal(loginModal);
+          emailInput.value = ''; passwordInput.value = '';
+          authMessage.textContent = '';
+        })
+        .catch((error) => {
+          authMessage.style.color = '#dc2626';
+          authMessage.textContent = 'อีเมลหรือรหัสผ่านไม่ถูกต้อง';
+        });
+    } else {
+      authMessage.textContent = 'กำลังสร้างบัญชีผู้ใช้...';
+      auth.createUserWithEmailAndPassword(email, password)
+        .then(() => {
+          closeModal(loginModal);
+          emailInput.value = ''; passwordInput.value = '';
+          authMessage.textContent = '';
+        })
+        .catch((error) => {
+          authMessage.style.color = '#dc2626';
+          if (error.code === 'auth/email-already-in-use') {
+            authMessage.textContent = 'อีเมลนี้ถูกใช้งานแล้ว';
+          } else if (error.code === 'auth/weak-password') {
+            authMessage.textContent = 'รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร';
+          } else {
+            authMessage.textContent = 'เกิดข้อผิดพลาด: ' + error.message;
+          }
+        });
+    }
+  });
+}
+
+/* ====== (จบส่วนที่เพิ่ม) ส่วนอื่นของแอปยังทำงานเหมือนเดิม ====== */
+/*
+Version: 2025-08-17 r9
+Changelog (from r8):
+- การสุ่ม "หารจำนวนเต็ม": บังคับให้แสดงตัวตั้ง/ตัวหารอยู่ในช่วง [-15,15]\{0} โดยเลือก quotient ให้ |divisor*quotient|≤15 (หารลงตัวเสมอ)
+- ไม่แตะส่วนอื่น (Pointer Events, กฎสุ่มพหุนาม ฯลฯ คงเดิม)
+*/
+
+//// ====== DOM ======
+const board = document.getElementById('board');
+const palette = document.getElementById('palette');
+const solutionBox = document.getElementById('solution');
+const problemBox = document.getElementById('problem');
+const answerInput = document.getElementById('answerInput');
+const checkBtn = document.getElementById('btn-check');
+const checkResult = document.getElementById('checkResult');
+const normalizeInput = document.getElementById('normalizeInput');
+
+const wsSolve = document.getElementById('ws-solve');
+const wsMul   = document.getElementById('ws-mul');
+const wsDiv   = document.getElementById('ws-div');
+const mulMult = document.getElementById('mul-mult');
+const mulMcand= document.getElementById('mul-mcand');
+const divDivisor = document.getElementById('div-divisor');
+const divQuot    = document.getElementById('div-quot');
+
+// ป้องกัน input ไปแย่ง drag
+['pointerdown'].forEach(evt=>{
+  if(divQuot){ divQuot.addEventListener(evt, e=>e.stopPropagation()); }
+  if(answerInput){ answerInput.addEventListener(evt, e=>e.stopPropagation()); }
+  if(normalizeInput){ normalizeInput.addEventListener(evt, e=>e.stopPropagation()); }
+});
+
+//// ====== Tiles config ======
+const TYPES = {
+  x2:      {labelHTML:'x<sup>2</sup>',   w:120, h:120, color:'var(--blue)',   shape:'square', neg:'neg_x2'},
+  neg_x2:  {labelHTML:'-x<sup>2</sup>',  w:120, h:120, color:'var(--red)',    shape:'square', neg:'x2'},
+  x:       {labelHTML:'x',               w:30,  h:120, color:'var(--green)',  shape:'rect',   neg:'neg_x'},
+  neg_x:   {labelHTML:'-x',              w:30,  h:120, color:'var(--red)',    shape:'rect',   neg:'x'},
+  one:     {labelHTML:'1',               w:30,  h:30,  color:'var(--yellow)', shape:'mini',   neg:'neg_one'},
+  neg_one: {labelHTML:'-1',              w:30,  h:30,  color:'var(--red)',    shape:'mini',   neg:'one'}
+};
+
+let tiles = [];
+let selection = new Set();
+let dragging = null;
+let selRect = null;
+let zoom = 1;
+let showSol = false;
+let mode = document.getElementById('mode').value;
+
+let problemText = '';
+let problemAnswer = '';
+let answerCoef = {a2:0,a1:0,a0:0};
+
+//// ====== Utils ======
+const uid = ()=> Math.random().toString(36).slice(2);
+const clamp = (v,a,b)=> Math.max(a,Math.min(b,v));
+
+function randNZMax(max){ let v=0; while(v===0){ v = (Math.random()<.5?-1:1) * (Math.floor(Math.random()*max)+1); } return v; }
+const rNZ9  = ()=>randNZMax(9);
+const rNZ15 = ()=>randNZMax(15);
+const rNZ20 = ()=>randNZMax(20);
+
+function rint(a,b){ return Math.floor(Math.random()*(b-a+1))+a; }
+
+function showWorkspace(which){
+  wsSolve.style.display = (which==='solve') ? 'block':'none';
+  wsMul.style.display   = (which==='mul')   ? 'block':'none';
+  wsDiv.style.display   = (which==='div')   ? 'block':'none';
+}
+
+function pt(e){
+  const rect = board.getBoundingClientRect();
+  return { x: (e.clientX - rect.left)/zoom, y: (e.clientY - rect.top)/zoom };
+}
+function overlaps(x,y,w,h,t){ return !(x+w < t.x || x > t.x+t.w || y+h < t.y || y > t.y+t.h); }
+function findFreeSpot(w,h){
+  const margin = 20;
+  const startX = 260, startY = 100;
+  let x=startX, y=startY;
+  const step = 20;
+  const limitX = 2000, limitY=1400;
+  let tries=0;
+  while(tries<3000){
+    const collide = tiles.some(t=>overlaps(x,y,w,h,t));
+    if(!collide) return {x,y};
+    x += step; if(x+w+margin>limitX){ x=startX; y += step; if(y+h+margin>limitY){ y=startY; } }
+    tries++;
+  }
+  return {x:startX,y:startY};
+}
+
+//// ====== Formatting helpers ======
+function termX2(k, isLeadDeg2){
+  if(k===1)  return 'x<sup>2</sup>';
+  if(k===-1) return isLeadDeg2 ? '-x<sup>2</sup>' : '(-x<sup>2</sup>)';
+  return (k<0 && !isLeadDeg2) ? `(${k}x<sup>2</sup>)` : `${k}x<sup>2</sup>`;
+}
+function termX1(k, deg){
+  if(k===1)  return 'x';
+  if(k===-1) return (deg===1 ? '-x' : '(-x)');
+  return (k<0 && deg===2) ? `(${k}x)` : `${k}x`;
+}
+function termC(k){ return (k<0) ? `(${k})` : `${k}`; }
+
+function polyToHTML(coef, outerBrackets){
+  const {a2=0,a1=0,a0=0} = coef;
+  const deg = a2 ? 2 : 1;
+  const parts=[];
+  if(a2){ parts.push( termX2(a2, true) ); }
+  if(a1){ parts.push( termX1(a1, deg) ); }
+  if(a0){ parts.push( termC(a0) ); }
+  if(parts.length===0) parts.push('0');
+  let s = parts.join(' + ');
+  s = s.replace(/\+ \(-/g,'+ (-');
+  return outerBrackets ? `[${s}]` : s;
+}
+
+function addCoef(A,B){ return {a2:(A.a2|0)+(B.a2|0), a1:(A.a1|0)+(B.a1|0), a0:(A.a0|0)+(B.a0|0)}; }
+function subCoef(A,B){ return {a2:(A.a2|0)-(B.a2|0), a1:(A.a1|0)-(B.a1|0), a0:(A.a0|0)-(B.a0|0)}; }
+function mulCoef(A,B){
+  const res = {a2:0,a1:0,a0:0};
+  [[2,A.a2|0],[1,A.a1|0],[0,A.a0|0]].forEach(([pa,ka])=>{
+    [[2,B.a2|0],[1,B.a1|0],[0,B.a0|0]].forEach(([pb,kb])=>{
+      const pow=pa+pb, k=ka*kb;
+      if(pow===2) res.a2+=k; else if(pow===1) res.a1+=k; else res.a0+=k;
+    });
+  });
+  return res;
+}
+function coefAbsLeq(A,limit){ return Math.abs(A.a2||0)<=limit && Math.abs(A.a1||0)<=limit && Math.abs(A.a0||0)<=limit; }
+
+function buildPolyDeg1(rangeNZ){ const b = rangeNZ(), c = rangeNZ(); return {coef:{a2:0,a1:b,a0:c}, html: polyToHTML({a1:b,a0:c}, true)}; }
+function buildPolyDeg1or2_forAddSub(){
+  const deg = Math.random()<.5?2:1;
+  if(deg===2){ const a=rNZ9(), b=rNZ9(), c=rNZ9(); return {coef:{a2:a,a1:b,a0:c}, html: polyToHTML({a2:a,a1:b,a0:c}, true)}; }
+  else{ const b=rNZ9(), c=rNZ9(); return {coef:{a2:0,a1:b,a0:c}, html: polyToHTML({a1:b,a0:c}, true)}; }
+}
+
+//// ====== Render ======
+function render(){
+  board.querySelectorAll('.tile').forEach(el=>el.remove());
+  tiles.forEach(t=>{
+    const el = document.createElement('div');
+    el.className = 'tile' + (selection.has(t.id) ? ' selected' : '');
+    el.style.background = TYPES[t.type].color;
+    el.style.left = t.x + 'px';
+    el.style.top  = t.y + 'px';
+    el.style.width  = t.w + 'px';
+    el.style.height = t.h + 'px';
+    const showLabel = (t.h >= 50 || TYPES[t.type].shape!=='rect');
+    el.innerHTML = showLabel ? '<span>'+TYPES[t.type].labelHTML+'</span>' : '';
+
+    el.addEventListener('pointerdown', (e)=>{
+      e.stopPropagation();
+      el.setPointerCapture(e.pointerId);
+      if(!selection.has(t.id)){
+        if(!e.shiftKey) selection.clear();
+        selection.add(t.id);
+      }else if(e.shiftKey){
+        selection.delete(t.id);
+      }
+      const p = pt(e);
+      const ids = Array.from(selection);
+      const offsets = ids.map(id=>{
+        const k = tiles.find(x=>x.id===id);
+        return {id, dx:p.x - k.x, dy:p.y - k.y};
+      });
+      dragging = {ids, offsets};
+      render();
+    });
+    board.appendChild(el);
+  });
+
+  const oldSel = board.querySelector('.sel-rect');
+  if(oldSel) oldSel.remove();
+  if(selRect){
+    const r = document.createElement('div');
+    r.className='sel-rect';
+    const x = Math.min(selRect.x0, selRect.x1);
+    const y = Math.min(selRect.y0, selRect.y1);
+    const w = Math.abs(selRect.x1 - selRect.x0);
+    const h = Math.abs(selRect.y1 - selRect.y0);
+    r.style.left = x+'px'; r.style.top=y+'px'; r.style.width=w+'px'; r.style.height=h+'px';
+    board.appendChild(r);
+  }
+
+  board.style.transform = 'scale('+zoom+')';
+  problemBox.innerHTML = problemText;
+  solutionBox.innerHTML = showSol ? '<b>คำตอบที่ถูกต้อง:</b> '+problemAnswer : '';
+}
+
+palette.querySelectorAll('.pal-item').forEach(el=>{
+  const addTile = ()=>{
+    const type = el.dataset.type;
+    const tdef = TYPES[type];
+    const id = uid();
+    const start = findFreeSpot(tdef.w, tdef.h);
+    tiles.push({id, type, x:start.x, y:start.y, w:tdef.w, h:tdef.h});
+    selection = new Set([id]);
+    render();
+  };
+  el.addEventListener('pointerdown', (e)=>{e.preventDefault(); addTile();});
+});
+
+board.addEventListener('pointerdown', (e)=>{
+  if(e.button!==0) return;
+  board.setPointerCapture(e.pointerId);
+  const p = pt(e);
+  const hit = tiles.slice().reverse().find(t=> p.x>=t.x && p.x<=t.x+t.w && p.y>=t.y && p.y<=t.y+t.h);
+  if(hit){
+    if(!selection.has(hit.id)){ selection = new Set([hit.id]); }
+    const ids = Array.from(selection);
+    const offsets = ids.map(id=>{
+      const k = tiles.find(x=>x.id===id);
+      return {id, dx:p.x - k.x, dy:p.y - k.y};
+    });
+    dragging = {ids, offsets};
+  }else{
+    selection.clear();
+    selRect = {x0:p.x, y0:p.y, x1:p.x, y1:p.y};
+  }
+  render();
+});
+board.addEventListener('pointermove', (e)=>{
+  if(!board) return;
+  if(dragging){
+    e.preventDefault();
+    const p = pt(e);
+    tiles = tiles.map(t=>{
+      const off = dragging.offsets.find(o=>o.id===t.id);
+      if(!off) return t;
+      return {...t, x:p.x - off.dx, y:p.y - off.dy};
+    });
+    render();
+  }else if(selRect){
+    e.preventDefault();
+    const p = pt(e); selRect.x1=p.x; selRect.y1=p.y; render();
+  }
+});
+board.addEventListener('pointerup', ()=>{
+  if(dragging) dragging=null;
+  if(selRect){
+    const {x0,y0,x1,y1} = selRect;
+    const minx=Math.min(x0,x1),maxx=Math.max(x0,x1),miny=Math.min(y0,y1),maxy=Math.max(y0,y1);
+    selection = new Set(tiles.filter(t=> t.x>=minx && t.y>=miny && (t.x+t.w)<=maxx && (t.y+t.h)<=maxy).map(t=>t.id));
+    selRect=null; render();
+  }
+});
+
+//// ====== Toolbar actions ======
+document.getElementById('btn-reset').onclick = ()=>{ tiles=[]; selection.clear(); zoom=1; render(); };
+document.getElementById('btn-delete').onclick = ()=>{ tiles = tiles.filter(t=>!selection.has(t.id)); selection.clear(); render(); };
+document.getElementById('btn-flip').onclick   = ()=>{ tiles = tiles.map(t=> selection.has(t.id) ? ({...t, type:TYPES[t.type].neg}) : t); render(); };
+document.getElementById('btn-zero').onclick   = ()=>{
+  const idsByType = (type)=> tiles.filter(t=>selection.has(t.id) && t.type===type).map(t=>t.id);
+  ['x2','x','one'].forEach(base=>{
+    const pos = idsByType(base), neg = idsByType(TYPES[base].neg);
+    const n = Math.min(pos.length, neg.length);
+    const kill = new Set([...pos.slice(0,n), ...neg.slice(0,n)]);
+    tiles = tiles.filter(t=> !kill.has(t.id));
+  });
+  selection.clear(); render();
+};
+document.getElementById('btn-rotate').onclick = ()=>{
+  tiles = tiles.map(t=> {
+    const shape = TYPES[t.type].shape;
+    if(!selection.has(t.id) || shape!=='rect') return t;
+    return {...t, w:t.h, h:t.w};
+  });
+  render();
+};
+document.getElementById('btn-duplicate').onclick = ()=>{
+  const selectedTiles = tiles.filter(t=> selection.has(t.id));
+  const clones = selectedTiles.map((t,i)=>{
+    const spot = findFreeSpot(t.w, t.h);
+    return {...t, id:uid(), x:spot.x + i*10, y:spot.y + i*10};
+  });
+  tiles = [...tiles, ...clones];
+  selection = new Set(clones.map(c=>c.id));
+  render();
+};
+document.getElementById('btn-zoom-in').onclick  = ()=>{ zoom = clamp(zoom*1.25, .4, 2.2); render(); };
+document.getElementById('btn-zoom-out').onclick = ()=>{ zoom = clamp(zoom*0.8,  .4, 2.2); render(); };
+
+const help = document.getElementById('help');
+const ytframe = document.getElementById('ytframe');
+document.getElementById('btn-help').onclick = ()=> help.style.display='flex';
+document.getElementById('help-x').onclick   = ()=>{
+  help.style.display='none';
+  const src = ytframe.src; ytframe.src = src;
+};
+
+//// ====== Mode & examples ======
+document.getElementById('mode').onchange = (e)=>{ mode = e.target.value; newExample(); };
+document.getElementById('btn-new').onclick = ()=> newExample();
+document.getElementById('btn-solution').onclick = (e)=>{
+  showSol = !showSol;
+  e.target.textContent = showSol ? 'ซ่อนเฉลย' : 'เฉลย';
+  render();
+};
+
+//// ====== Parser (เหมือน r8) ======
+function sanitizeInput(s){
+  return String(s||'').replace(/−/g,'-').replace(/·|×/g,'*').replace(/x²/gi,'x^2').replace(/\[/g,'(').replace(/\]/g,')').replace(/\s+/g,'').trim();
+}
+function parsePoly(input){
+  const s = sanitizeInput(input);
+  if(s.length===0) return null;
+  if(/[^0-9xX+\-^()]/.test(s)) return null;
+  let i=0;
+  function peek(){ return s[i]||''; }
+  function eat(ch){ if(s[i]===ch){ i++; return true;} return false; }
+  function coef(a2=0,a1=0,a0=0){ return {a2,a1,a0}; }
+  function add(A,B){ return {a2:A.a2+B.a2, a1:A.a1+B.a1, a0:A.a0+B.a0}; }
+  function mulK(k,A){ return {a2:k*A.a2, a1:k*A.a1, a0:k*A.a0}; }
+
+  function parseFactor(){
+    let sign = 1;
+    if(eat('+')){} else if(eat('-')){ sign = -1; }
+
+    if(eat('(')){
+      const e = parseExpr();
+      if(!eat(')')) return null;
+      return mulK(sign, e);
+    }
+    let numStr=''; while(/[0-9]/.test(peek())) numStr+=s[i++];
+    let coeff = (numStr==='')?1:parseInt(numStr,10);
+    if(peek().toLowerCase()==='x'){
+      i++;
+      let power = 1;
+      if(eat('^')){ if(peek()==='2'){ i++; power = 2; } else return null; }
+      return mulK(sign*coeff, power===2?coef(1,0,0):coef(0,1,0));
+    }else{
+      if(numStr==='') return null;
+      return mulK(sign*coeff, coef(0,0,1));
+    }
+  }
+  function parseTerm(){ const f = parseFactor(); if(!f) return null; return f; }
+  function parseExpr(){
+    let v = parseTerm(); if(!v) return null;
+    while(true){
+      if(eat('+')){ const t=parseTerm(); if(!t) return null; v=add(v,t); }
+      else if(eat('-')){ const t=parseTerm(); if(!t) return null; v=add(v,mulK(-1,t)); }
+      else break;
+    }
+    return v;
+  }
+  const res = parseExpr();
+  if(res==null) return null;
+  if(i!==s.length) return null;
+  res.a2 |=0; res.a1|=0; res.a0|=0;
+  return res;
+}
+function coefToHTML({a2,a1,a0}, withBrackets){ return polyToHTML({a2,a1,a0}, !!withBrackets); }
+function equalsCoef(a,b){ return (a.a2|0)===(b.a2|0) && (a.a1|0)===(b.a1|0) && (a.a0|0)===(b.a0|0); }
+
+//// ====== Example generator ======
+function newExample(){
+  showSol=false; document.getElementById('btn-solution').textContent='เฉลย';
+  answerInput.value=''; checkResult.textContent='';
+  tiles=[]; selection.clear();
+  showWorkspace(null);
+
+  if(mode==='int_add'){
+    const a=rNZ15(), b=rNZ15();
+    problemText = `${a} + ${b<0?`(${b})`:b}`;
+    const sum=a+b; answerCoef={a2:0,a1:0,a0:sum}; problemAnswer=String(sum);
+  }else if(mode==='int_sub'){
+    const a=rNZ15(), b=rNZ15();
+    problemText = `${a} - ${b<0?`(${b})`:b}`;
+    const res=a-b; answerCoef={a2:0,a1:0,a0:res}; problemAnswer=String(res);
+  }else if(mode==='int_mul'){
+    const a=rNZ15(), b=rNZ15();
+    problemText = `${a} × ${b<0?`(${b})`:b}`;
+    const res=a*b; answerCoef={a2:0,a1:0,a0:res}; problemAnswer=String(res);
+    showWorkspace('mul'); mulMult.textContent=b; mulMcand.textContent=a;
+  }else if(mode==='int_div'){
+    // NEW r9: ทั้ง dividend และ divisor ต้องอยู่ใน [-15,15]\{0}
+    const divisor = rNZ15();
+    const maxQ = Math.max(1, Math.floor(15/Math.abs(divisor))); // อย่างน้อย 1
+    // สุ่มผลหารในช่วง [-maxQ, maxQ]\{0}
+    let q = 0;
+    while(q===0){ q = (Math.random()<.5?-1:1) * rint(1, maxQ); }
+    const dividend = divisor * q; // จะอยู่ในช่วงแน่นอน
+    problemText = `${dividend} ÷ ${divisor<0?`(${divisor})`:divisor}`;
+    answerCoef={a2:0,a1:0,a0:q}; problemAnswer=String(q);
+    showWorkspace('div'); divDivisor.textContent=divisor; divQuot.value='';
+  }else if(mode==='poly_add' || mode==='poly_sub'){
+    const P = buildPolyDeg1or2_forAddSub();
+    const Q = buildPolyDeg1or2_forAddSub();
+    if(mode==='poly_add'){ problemText = `${P.html} + ${Q.html}`; answerCoef = addCoef(P.coef, Q.coef); }
+    else{ problemText = `${P.html} - ${Q.html}`; answerCoef = subCoef(P.coef, Q.coef); }
+    problemAnswer = coefToHTML(answerCoef, false);
+  }else if(mode==='poly_mul'){
+    let A,B,ok=false;
+    while(!ok){
+      const p = buildPolyDeg1(rNZ9);
+      const q = buildPolyDeg1(rNZ9);
+      const prod = mulCoef(p.coef, q.coef);
+      if(coefAbsLeq(prod,36)){ A=p; B=q; ok=true; }
+    }
+    problemText = `${A.html} × ${B.html}`;
+    answerCoef = mulCoef(A.coef,B.coef);
+    problemAnswer = coefToHTML(answerCoef, false);
+    showWorkspace('mul');
+    mulMult.innerHTML  = coefToHTML(B.coef,false);
+    mulMcand.innerHTML = coefToHTML(A.coef,false);
+  }else if(mode==='poly_div'){
+    let s,t,a,b,c,degQ,dividend,divisor,quot,ok=false;
+    while(!ok){
+      s=rNZ20(); t=rNZ20();
+      degQ = Math.random()<.5 ? 1 : 2;
+      if(degQ===1){ a=rNZ20(); b=rNZ20(); c=0; quot={a2:0,a1:a,a0:b}; }
+      else        { a=rNZ20(); b=rNZ20(); c=rNZ20(); quot={a2:a,a1:b,a0:c}; }
+      divisor = {a2:0,a1:s,a0:t};
+      dividend = mulCoef(divisor, quot);
+      if(coefAbsLeq(dividend,20)) ok=true;
+    }
+    const check = mulCoef(divisor, quot);
+    if(!equalsCoef(check, dividend)) return newExample();
+
+    const dividendHTML = polyToHTML(dividend, true);
+    const divisorHTML  = polyToHTML(divisor,  true);
+    problemText   = `${dividendHTML} ÷ ${divisorHTML}`;
+    answerCoef    = quot;
+    problemAnswer = coefToHTML(answerCoef, false);
+    showWorkspace('div');
+    divDivisor.innerHTML = coefToHTML(divisor,false);
+    divQuot.value='';
+  
+} else if (mode === 'solve_lin') {
+  // ต้องการ "คำตอบเดียว" -> บังคับ a != c
+  let a, b, c, x, d, ok = false;
+  while (!ok) {
+    a = rNZ15();          // สุ่มสัมประสิทธิ์ x (ฝั่งซ้าย) ∈ [-15,15]\{0}
+    c = rNZ15();          // สุ่มสัมประสิทธิ์ x (ฝั่งขวา) ∈ [-15,15]\{0}
+    if (a === c) continue; // ห้ามเท่ากัน เพื่อให้มีคำตอบเดียวเสมอ
+
+    b = rNZ15();          // ค่าคงที่ฝั่งซ้าย
+    x = rint(-15, 15);    // เฉลย x เป็นจำนวนเต็มช่วงเดียวกัน
+    if (x === 0) continue;
+
+    // คำนวณค่าคงที่ฝั่งขวาให้สอดคล้องกับเฉลยที่ตั้งไว้
+    // จาก: a*x + b = c*x + d  ->  d = (a-c)*x + b
+    d = (a - c) * x + b;
+
+    // จำกัดขนาดพจน์คงที่ไม่ให้หลุดช่วงมากเกินไป (อ่านง่าย)
+    if (Math.abs(d) <= 15) ok = true;
+  }
+
+  // แสดงโจทย์ (จัดรูปสวย ๆ เลี่ยง "+-" ให้เป็น "-")
+  const ax = (a === 1 ? '' : a === -1 ? '-' : String(a)) + 'x';
+  const cx = (c === 1 ? '' : c === -1 ? '-' : String(c)) + 'x';
+  problemText = `ถ้า ${ax}${b >= 0 ? '+' : ''}${b} = ${cx}${d >= 0 ? '+' : ''}${d} แล้ว x มีค่า `.replace(/\+\-/g, '-');
+
+  // เฉลย: x = ค่าเดียวที่ตั้งไว้
+  answerCoef = { a2: 0, a1: 1, a0: -x };
+  problemAnswer = `x = ${x}`;
+  showWorkspace('solve');
+}
+
+  render();
+}
+
+//// ====== Checking ======
+checkBtn.onclick = ()=>{
+  checkResult.textContent=''; checkResult.style.color='';
+  const givenRaw = answerInput.value;
+  const given = givenRaw.replace(/\s+/g,'').replace(/−/g,'-').replace(/\[/g,'(').replace(/\]/g,')');
+  const stripPar = (s)=>{ let r=s; while(r.startsWith('(') && r.endsWith(')')) r=r.slice(1,-1); return r; };
+
+  if(['int_add','int_sub','int_mul','int_div'].includes(mode)){
+    const s = stripPar(given);
+    if(!/^-?\d+$/.test(s)){ bad(); return; }
+    if(parseInt(s,10) === (answerCoef.a0|0)){ good(); } else { bad(); }
+    return;
+  }
+  if(mode==='solve_lin'){
+    let s = stripPar(given);
+    let m = s.match(/^x=?(-?\d+)$/i); if(m){ s=m[1]; }
+    if(!/^-?\d+$/.test(s)){ bad(); return; }
+    const val = parseInt(s,10);
+    const truth = -answerCoef.a0;
+    if(val===truth){ good(); } else { bad(); }
+    return;
+  }
+  const parsed = parsePoly(given);
+  if(!parsed){ bad(); return; }
+  if(equalsCoef(parsed, answerCoef)){ good(); } else { bad(); }
+
+  function good(){ checkResult.textContent='ถูกต้อง'; checkResult.style.color='#16a34a'; }
+  function bad(){ checkResult.textContent='ไม่ถูกต้อง'; checkResult.style.color='#dc2626'; }
+};
+
+//// ====== Init ======
+document.getElementById('btn-new').focus();
+newExample();
+render();
+
+/* ---------- [เพิ่ม] 🤖 ระบบ AI Chatbot Tutor (Gemini API) ---------- */
+const GEMINI_API_KEY = "AQ.Ab8RN6LNwW4YOv6jtbS5D9E2oCLwFXu05-zZ1vp6Y92qj7ZhBg"; 
+
+const chatbotFab = document.getElementById('chatbot-fab');
+const chatbotWindow = document.getElementById('chatbot-window');
+const chatbotClose = document.getElementById('chatbot-close');
+const chatbotInput = document.getElementById('chatbot-input');
+const chatbotSend = document.getElementById('chatbot-send');
+const chatbotMessages = document.getElementById('chatbot-messages');
+
+if (chatbotFab && chatbotWindow && chatbotClose) {
+  // สลับเปิด/ปิดหน้าต่างแชท
+  chatbotFab.addEventListener('click', () => {
+    chatbotWindow.style.display = chatbotWindow.style.display === 'none' ? 'flex' : 'none';
+    if(chatbotWindow.style.display === 'flex') chatbotInput.focus();
+  });
+  chatbotClose.addEventListener('click', () => {
+    chatbotWindow.style.display = 'none';
+  });
+}
+
+// ฟังก์ชันสำหรับเพิ่มข้อความลงในแชท
+function addChatMessage(sender, text) {
+  const msgDiv = document.createElement('div');
+  msgDiv.classList.add('msg', sender === 'user' ? 'user-msg' : 'ai-msg');
+  
+  // แปลง Markdown เบื้องต้นให้แสดงผลตัวหนาและขึ้นบรรทัดใหม่ได้
+  let formattedText = text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+  msgDiv.innerHTML = formattedText;
+  
+  chatbotMessages.appendChild(msgDiv);
+  chatbotMessages.scrollTop = chatbotMessages.scrollHeight; // เลื่อนจอลงล่างสุดอัตโนมัติ
+}
+
+// ฟังก์ชันสำหรับส่งคำถามไปให้ Gemini API
+async function getGeminiResponse(userText) {
+  addChatMessage('user', userText); // แสดงข้อความของนักเรียน
+  chatbotInput.value = ''; // ล้างช่องพิมพ์
+  
+  // แสดง "กำลังคิด..."
+  const loadingDiv = document.createElement('div');
+  loadingDiv.classList.add('msg', 'ai-msg');
+  loadingDiv.textContent = 'กำลังคิด... 🤔';
+  chatbotMessages.appendChild(loadingDiv);
+  chatbotMessages.scrollTop = chatbotMessages.scrollHeight;
+
+  /* 🧠 Prompt Engineering: คำสั่งควบคุมติวเตอร์ AI */
+  const systemInstruction = `
+    คุณคือติวเตอร์คณิตศาสตร์ใจดี ชื่อ “AI-Buddy” หน้าที่ของคุณคือช่วยสอนนักเรียนเรื่อง "พหุนามและสมการเชิงเส้น" โดยใช้สื่อ "กระเบื้องพีชคณิต (Algebra Tiles)"
+    กฎเหล็กของคุณ:
+    1. ห้ามเฉลยคำตอบสุดท้ายให้เด็กเด็ดขาด!
+    2. ให้คำใบ้ทีละขั้นตอน (Hint) เพื่อกระตุ้นให้นักเรียนคิดแก้ปัญหาด้วยตนเอง
+    3. อธิบายโดยอ้างอิงถึงสีและการจัดวางกระเบื้อง เช่น กระเบื้องสีน้ำเงิน (x^2), สีเขียว (x), สีเหลือง (1) และสีแดงคือค่าติดลบ แนะนำให้ใช้เทคนิค "จับคู่เป็นศูนย์" (Zero Pair) เพื่อหักล้างกัน
+    4. ตอบสั้นๆ กระชับ เป็นกันเอง และให้กำลังใจเสมอ
+  `;
+  
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: userText }] }],
+        systemInstruction: { parts: [{ text: systemInstruction }] }
+      })
+    });
     
-    <!-- 👤 เพิ่มโค้ดปุ่มเข้าสู่ระบบตรงนี้ -->
-    <button class="btn" id="btn-login" title="เข้าสู่ระบบ/สมัครสมาชิก" style="margin-left: auto; background: linear-gradient(180deg, #d4d4d8, #a1a1aa);">เข้าสู่ระบบ</button>
+    const data = await response.json();
+    chatbotMessages.removeChild(loadingDiv); // ลบข้อความกำลังคิดออก
     
-    <!-- 📖 ใหม่: ปุ่มลิงก์แบบฝึก/แบบทดสอบ (อยู่ก่อน ? ตามที่ขอ) -->
-    <button class="btn" id="btn-links" title="ลิงก์แบบทดสอบ/แบบฝึก">📖</button>
+    if (data.candidates && data.candidates.length > 0) {
+      const aiText = data.candidates[0].content.parts[0].text;
+      addChatMessage('ai', aiText);
+    } else {
+      addChatMessage('ai', 'ระบบประมวลผลผิดพลาด ลองถามใหม่อีกครั้งนะครับ');
+    }
+  } catch (error) {
+    chatbotMessages.removeChild(loadingDiv);
+    addChatMessage('ai', 'การเชื่อมต่อขัดข้อง กรุณาตรวจสอบอินเทอร์เน็ตครับ');
+    console.error(error);
+  }
+}
 
-    <button class="btn help-btn" id="btn-help">?</button>
-  </div>
-
-  <!-- แถวโจทย์ (พื้นหลังขาวเสมอ) -->
-  <div class="row row-top">
-    <!-- 💡 ใหม่: ปุ่มวิดีโอ อยู่หน้าปุ่ม 'โจทย์ใหม่' -->
-    <button class="btn btn-inline" id="btn-video" title="วิดีโอประกอบ">💡</button>
-    <button class="btn btn-inline" id="btn-new">โจทย์ใหม่</button>
-    <div class="lbl">โจทย์:</div>
-    <div id="problem" class="prob"></div>
-    <div class="eq">=</div>
-    <input type="text" id="answerInput" placeholder="พิมพ์คำตอบ" />
-    <button class="btn btn-inline" id="btn-check">ตรวจสอบคำตอบ</button>
-    <div id="checkResult" class="check-msg"></div>
-    <div id="solution" class="solution"></div>
-  </div>
-  
-<!-- 👤 เพิ่ม Modal สำหรับ Login / Sign Up ตรงนี้ -->
-  <div class="modal" id="loginModal" style="display:none">
-    <div class="card" style="max-width: 400px;">
-      <button class="close-x" id="login-x" title="ปิด">×</button>
-      <div class="help-title" id="auth-title">เข้าสู่ระบบ (Login)</div>
-      
-      <div class="auth-form">
-        <input type="email" id="auth-email" placeholder="อีเมล (Email)" required />
-        <input type="password" id="auth-password" placeholder="รหัสผ่าน (Password)" required />
-        <button class="btn" id="btn-submit-auth" style="background: linear-gradient(180deg, #86efac, #4ade80);">เข้าสู่ระบบ</button>
-      </div>
-
-      <div id="auth-message" style="color: #dc2626; margin-top: 10px; font-size: 0.9rem; text-align: center;"></div>
-      
-      <div class="auth-toggle" id="auth-toggle-text">
-        ยังไม่มีบัญชีใช่ไหม? <span style="text-decoration: underline; font-weight: bold;">สมัครสมาชิกที่นี่</span>
-      </div>
-    </div>
-  </div>
-  
-  <!-- แถว "จัดรูปสมการ/กำหนดโจทย์ด้วยตนเอง" -->
-  <div class="row row-normalize">
-    <input id="normalizeInput" type="text" placeholder="จัดรูปสมการ/กำหนดโจทย์ด้วยตนเอง" />
-  </div>
-
-  <div class="wrap">
-    <aside class="palette" id="palette">
-      <div class="pal-title">กระเบื้องพีชคณิต</div>
-      <div class="pal-item" data-type="x2"><div class="pal-chip chip-x2"></div><span>x<sup>2</sup></span></div>
-      <div class="pal-item" data-type="neg_x2"><div class="pal-chip chip-negx2"></div><span>-x<sup>2</sup></span></div>
-      <div class="pal-item" data-type="x"><div class="pal-chip chip-x"></div><span>x</span></div>
-      <div class="pal-item" data-type="neg_x"><div class="pal-chip chip-negx"></div><span>-x</span></div>
-      <div class="pal-item" data-type="one"><div class="pal-chip chip-one"></div><span>1</span></div>
-      <div class="pal-item" data-type="neg_one"><div class="pal-chip chip-negone"></div><span>-1</span></div>
-      <div class="pal-note">* ต้องการจำนวนตรงข้ามใช้ปุ่ม “พลิกด้าน”</div>
-    </aside>
-
-    <section class="board-wrap">
-      <div class="board" id="board">
-        <!-- Workspaces -->
-        <div class="ws" id="ws-solve"><div class="midline"></div></div>
-
-        <div class="ws" id="ws-mul">
-          <div class="table2x2" id="mul-table">
-            <div class="cell" id="mul-op">×</div>
-            <div class="cell" id="mul-mult">?</div>
-            <div class="cell" id="mul-mcand">?</div>
-            <div class="cell"></div>
-          </div>
-        </div>
-
-        <div class="ws" id="ws-div">
-          <div class="table2x2">
-            <div class="cell" id="div-op">÷</div>
-            <div class="cell"><input id="div-quot" placeholder="?" /></div>
-            <div class="cell" id="div-divisor">?</div>
-            <div class="cell"></div>
-          </div>
-        </div>
-      </div>
-    </section>
-  </div>
-
-  <!-- Help popup (เดิม) -->
-  <div class="modal" id="help" style="display:none">
-    <div class="card">
-      <button class="close-x" id="help-x" title="ปิด">×</button>
-      <div class="help-title">วิธีใช้งาน Algebra Tiles</div>
-      <ul class="help-list">
-        <li>ลากชิ้นส่วนจากแถบซ้ายเข้าสู่กระดานได้ไม่จำกัด</li>
-        <li>คลิกค้างแล้วลากบนพื้นที่ว่างเพื่อเลือกคลุมหลายชิ้น</li>
-        <li>ปุ่ม “พลิกด้าน” เปลี่ยนเป็นค่าตรงข้าม, “จับคู่เป็นศูนย์” ลบคู่ตรงข้าม, “หมุน” ใช้กับสี่เหลี่ยมผืนผ้า, “เพิ่มจำนวน” เพิ่มชิ้นที่เลือกเป็นเท่าตัว</li>
-        <li>ปุ่ม “จัดระเบียบ” เคลียร์กระดานและรีเซ็ตซูม</li>
-        <li><b>หากต้องการพิมพ์กำลังสอง ให้พิมพ์ x^2</b></li>
-      </ul>
-      <div class="video-wrap">
-        <iframe id="ytframe" src="https://www.youtube.com/embed/vpPespGMeJE?si=GV-CuAATJsl0WBsF" title="Algebra Tiles" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-      </div>
-      <div class="credit">
-        <div><b>จัดทำโดย นางสาวธัญชนก แย้มมาก</b></div>
-        <div>โรงเรียนบางแม่หม้ายรัฐราษฎร์รังสฤษดิ์</div>
-      </div>
-      <div class="contact-row">
-        <a class="btn contact" href="https://line.me/ti/p/4X5zjQ9EjJ" target="_blank" rel="noopener">📞 ติดต่อคุณครู</a>
-      </div>
-    </div>
-  </div>
-
-  <!-- 📖 ใหม่: Modal ลิสต์ลิงก์แบบฝึก/แบบทดสอบ -->
-  <div class="modal" id="linksModal" style="display:none">
-    <div class="card">
-      <button class="close-x" id="links-x" title="ปิด">×</button>
-      <div class="help-title">ลิงก์แบบทดสอบ & แบบฝึกหัด</div>
-      <ul class="link-list">
-        <li><a href="https://forms.gle/818MfCDrbNQfdMBm7" target="_blank" rel="noopener">❤️ แบบทดสอบก่อนเรียน</a></li>
-        <li><a href="https://forms.gle/JLXqbHbDKG12RpmY8" target="_blank" rel="noopener">⭐️ แบบฝึกหัดการบวกจำนวนเต็ม</a></li>
-        <li><a href="https://forms.gle/oYqZLsq1RMaKcrFX6" target="_blank" rel="noopener">⭐️ แบบฝึกหัดการลบจำนวนเต็ม</a></li>
-        <li><a href="https://forms.gle/qfwQaxs6K9KEcmaw6" target="_blank" rel="noopener">⭐️ แบบฝึกหัดการคูณจำนวนเต็ม</a></li>
-        <li><a href="https://forms.gle/WBaGoTexFzNt9w9i9" target="_blank" rel="noopener">⭐️ แบบฝึกหัดการหารจำนวนเต็ม</a></li>
-        <li><a href="https://forms.gle/jsnznmtCcZ7otEiVA" target="_blank" rel="noopener">⭐️ แบบฝึกหัดการบวกพหุนาม</a></li>
-        <li><a href="https://forms.gle/8VUK4tHpqWnLNnms7" target="_blank" rel="noopener">⭐️ แบบฝึกหัดการลบพหุนาม</a></li>
-        <li><a href="https://forms.gle/NRzCfoy2KXek35588" target="_blank" rel="noopener">⭐️ แบบฝึกหัดการคูณพหุนาม</a></li>
-        <li><a href="https://forms.gle/cFQrnprQStT1dk9R8" target="_blank" rel="noopener">⭐️ แบบฝึกหัดการหารพหุนาม</a></li>
-        <li><a href="https://forms.gle/xcFV5qLafb8AqEgFA" target="_blank" rel="noopener">⭐️ แบบฝึกหัดการแก้สมการ</a></li>
-        <li><a href="https://quiz.zep.us/th/play/JdxP7M" target="_blank" rel="noopener">🎮 เกมทบทวนบทเรียน</a></li>
-        <li><a href="https://forms.gle/zghZCqu8qJ1abyxm7" target="_blank" rel="noopener">❤️ แบบทดสอบหลังเรียน</a></li>
-      </ul>
-    </div>
-  </div>
-
-  <!-- 💡 ใหม่: Modal วิดีโอ YouTube -->
-  <div class="modal" id="videoModal" style="display:none">
-    <div class="card">
-      <button class="close-x" id="video-x" title="ปิด">×</button>
-      <div class="help-title">วิดีโอประกอบการสอน</div>
-      <div class="video-wrap">
-        <iframe id="videoFrame" src="" title="Lesson Video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
-      </div>
-    </div>
-  </div>
-  
-  <!-- 🤖 เพิ่ม UI สำหรับ AI Chatbot Tutor ตรงนี้ -->
-  <button id="chatbot-fab" class="chatbot-fab" title="ถาม AI Tutor">🤖</button>
-  
-  <div id="chatbot-window" class="chatbot-window" style="display: none;">
-    <div class="chatbot-header">
-      <span>AI Tutor 🤖</span>
-      <button id="chatbot-close" class="close-x" style="position:relative; right:0; top:0; width:24px; height:24px; font-size:16px;">×</button>
-    </div>
-    
-    <div id="chatbot-messages" class="chatbot-messages">
-      <div class="msg ai-msg">สวัสดีครับ! ผมคือ "Kru Zack AI" มีอะไรให้ผมช่วยแนะนำเกี่ยวกับการแก้โจทย์ด้วยกระเบื้องพีชคณิตไหมครับ? ✌️</div>
-    </div>
-    
-    <div class="chatbot-input-area">
-      <input type="text" id="chatbot-input" placeholder="พิมพ์คำถามที่นี่..." autocomplete="off" />
-      <button id="chatbot-send">ส่ง</button>
-    </div>
-  </div>
-  
-<!-- เพิ่ม Firebase Libraries 2 บรรทัดนี้ ตรงนี้ -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
-  <script src="app.js"></script>
-  
-</body>
-</html>
+// ตรวจจับการกดปุ่มส่งและการกด Enter
+if (chatbotSend && chatbotInput) {
+  chatbotSend.addEventListener('click', () => {
+    const text = chatbotInput.value.trim();
+    if (text) getGeminiResponse(text);
+  });
+  chatbotInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') {
+      const text = chatbotInput.value.trim();
+      if (text) getGeminiResponse(text);
+    }
+  });
+}
