@@ -780,7 +780,11 @@ async function getGeminiResponse(userText) {
       const aiText = data.candidates[0].content.parts[0].text;
       addChatMessage('ai', aiText);
     } else {
-      addChatMessage('ai', 'ระบบประมวลผลผิดพลาด ลองถามใหม่อีกครั้งนะครับ');
+      // ให้มันปริ้นท์ Error ออกมาทาง Console ด้วยเพื่อความชัวร์
+      console.error("API Error Details:", data); 
+      // นำข้อความ Error จาก Google มาแสดงบนแชทเลย
+      const errorMsg = data.error ? data.error.message : 'ไม่ทราบสาเหตุ';
+      addChatMessage('ai', 'ระบบประมวลผลผิดพลาด สาเหตุ: ' + errorMsg);
     }
   } catch (error) {
     chatbotMessages.removeChild(loadingDiv);
