@@ -761,7 +761,8 @@ async function getGeminiResponse(userText) {
     4. ตอบสั้นๆ กระชับ เป็นกันเอง และให้กำลังใจเสมอ
   `;
   
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`;
+  // เปลี่ยนชื่อรุ่นใน URL เป็นรุ่นปัจจุบัน
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GEMINI_API_KEY}`;
   
   try {
     const response = await fetch(url, {
