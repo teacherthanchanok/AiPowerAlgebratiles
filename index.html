@@ -30,7 +30,10 @@
       <option value="poly_div">การหารพหุนาม</option>
       <option value="solve_lin">การแก้สมการ</option>
     </select>
-
+    
+    <!-- 👤 เพิ่มโค้ดปุ่มเข้าสู่ระบบตรงนี้ -->
+    <button class="btn" id="btn-login" title="เข้าสู่ระบบ/สมัครสมาชิก" style="margin-left: auto; background: linear-gradient(180deg, #d4d4d8, #a1a1aa);">เข้าสู่ระบบ</button>
+    
     <!-- 📖 ใหม่: ปุ่มลิงก์แบบฝึก/แบบทดสอบ (อยู่ก่อน ? ตามที่ขอ) -->
     <button class="btn" id="btn-links" title="ลิงก์แบบทดสอบ/แบบฝึก">📖</button>
 
@@ -50,7 +53,27 @@
     <div id="checkResult" class="check-msg"></div>
     <div id="solution" class="solution"></div>
   </div>
+  
+<!-- 👤 เพิ่ม Modal สำหรับ Login / Sign Up ตรงนี้ -->
+  <div class="modal" id="loginModal" style="display:none">
+    <div class="card" style="max-width: 400px;">
+      <button class="close-x" id="login-x" title="ปิด">×</button>
+      <div class="help-title" id="auth-title">เข้าสู่ระบบ (Login)</div>
+      
+      <div class="auth-form">
+        <input type="email" id="auth-email" placeholder="อีเมล (Email)" required />
+        <input type="password" id="auth-password" placeholder="รหัสผ่าน (Password)" required />
+        <button class="btn" id="btn-submit-auth" style="background: linear-gradient(180deg, #86efac, #4ade80);">เข้าสู่ระบบ</button>
+      </div>
 
+      <div id="auth-message" style="color: #dc2626; margin-top: 10px; font-size: 0.9rem; text-align: center;"></div>
+      
+      <div class="auth-toggle" id="auth-toggle-text">
+        ยังไม่มีบัญชีใช่ไหม? <span style="text-decoration: underline; font-weight: bold;">สมัครสมาชิกที่นี่</span>
+      </div>
+    </div>
+  </div>
+  
   <!-- แถว "จัดรูปสมการ/กำหนดโจทย์ด้วยตนเอง" -->
   <div class="row row-normalize">
     <input id="normalizeInput" type="text" placeholder="จัดรูปสมการ/กำหนดโจทย์ด้วยตนเอง" />
@@ -151,7 +174,11 @@
       </div>
     </div>
   </div>
-
+  
+<!-- เพิ่ม Firebase Libraries 2 บรรทัดนี้ ตรงนี้ -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.1/firebase-auth-compat.js"></script>
   <script src="app.js"></script>
+  
 </body>
 </html>
