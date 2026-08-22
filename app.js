@@ -738,8 +738,7 @@ function addChatMessage(sender, text) {
   chatbotMessages.appendChild(msgDiv);
   chatbotMessages.scrollTop = chatbotMessages.scrollHeight; // เลื่อนจอลงล่างสุดอัตโนมัติ
 }
-
-// ฟังก์ชันสำหรับส่งคำถามไปให้ Gemini API
+// ฟังก์ชันสำหรับส่งคำถามไปให้ Gemini API (แก้ไขวิธีส่ง Auth ให้ถูกต้อง)
 async function getGeminiResponse(userText) {
   addChatMessage('user', userText); // แสดงข้อความของนักเรียน
   chatbotInput.value = ''; // ล้างช่องพิมพ์
@@ -757,17 +756,22 @@ async function getGeminiResponse(userText) {
     กฎเหล็กของคุณ:
     1. ห้ามเฉลยคำตอบสุดท้ายให้เด็กเด็ดขาด!
     2. ให้คำใบ้ทีละขั้นตอน (Hint) เพื่อกระตุ้นให้นักเรียนคิดแก้ปัญหาด้วยตนเอง
-    3. อธิบายโดยอ้างอิงถึงสีและการจัดวางกระเบื้อง เช่น กระเบื้องสีน้ำเงิน (x^2), สีเขียว (x), สีเหลือง (1) และสีแดงคือค่าติดลบ แนะนำให้ใช้เทคนิค "จับคู่เป็นศูนย์" (Zero Pair) เพื่อหักล้างกัน
+    3. อธิบายโดยอ้างอิงถึงสีและการจัดวางกระเบื้อง แนะนำเทคนิค "จับคู่เป็นศูนย์" (Zero Pair) เพื่อหักล้างกัน
     4. ตอบสั้นๆ กระชับ เป็นกันเอง และให้กำลังใจเสมอ
   `;
   
-  // เปลี่ยนชื่อรุ่นใน URL เป็นรุ่นปัจจุบัน
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  const GEMINI_API_KEY = "AQ.Ab8RN6LNwW4YOv6jtbS5D9E2oCLwFXu05-zZ1vp6Y92qj7ZhBg";
+  
+  // 💡 เปลี่ยนมาใช้ URL ปกติ และส่ง Key ผ่าน Header 'x-goog-api-key' แทน
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent`;
   
   try {
     const response = await fetch(url, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 
+        'Content-Type': 'application/json',
+        'x-goog-api-key': GEMINI_API_KEY // แนบกุญแจผ่าน Header อย่างถูกต้อง
+      },
       body: JSON.stringify({
         contents: [{ parts: [{ text: userText }] }],
         systemInstruction: { parts: [{ text: systemInstruction }] }
@@ -777,21 +781,21 @@ async function getGeminiResponse(userText) {
     const data = await response.json();
     chatbotMessages.removeChild(loadingDiv); // ลบข้อความกำลังคิดออก
     
-    if (data.candidates && data.candidates.length > 0) {
+    if (response.ok && data.candidates && data.candidates.length > 0) {
       const aiText = data.candidates[0].content.parts[0].text;
       addChatMessage('ai', aiText);
     } else {
-      // ให้มันปริ้นท์ Error ออกมาทาง Console ด้วยเพื่อความชัวร์
-      console.error("API Error Details:", data); 
-      // นำข้อความ Error จาก Google มาแสดงบนแชทเลย
-      const errorMsg = data.error ? data.error.message : 'ไม่ทราบสาเหตุ';
-      addChatMessage('ai', 'ระบบประมวลผลผิดพลาด สาเหตุ: ' + errorMsg);
+      console.error("API Error Details:", data);
+      const errMsg = data.error ? data.error.message : 'ไม่ทราบสาเหตุ';
+      addChatMessage('ai', 'เกิดข้อผิดพลาด: ' + errMsg);
     }
   } catch (error) {
     chatbotMessages.removeChild(loadingDiv);
-    addChatMessage('ai', 'การเชื่อมต่อขัดข้อง กรุณาตรวจสอบอินเทอร์เน็ตครับ');
-    console.error(error);
+    addChatMessage('ai', 'การเชื่อมต่อขัดข้อง: ' + error.message);
+    console.error("Fetch Error:", error);
   }
+}
+
 }
 
 // ตรวจจับการกดปุ่มส่งและการกด Enter
