@@ -706,7 +706,7 @@ newExample();
 render();
 
 /* ---------- [เพิ่ม] 🤖 ระบบ AI Chatbot Tutor (Gemini API) ---------- */
-const GEMINI_API_KEY = "AQ.Ab8RN6IfDdHoYTJDQpA4mtizxQiyqwSkwekfVf7_bKFT79-Kyg"; 
+const GEMINI_API_KEY = "AQ.Ab8RN6Ll4kvAdNt8ifXozBNAeSLXYccOKatvUfhUJ6LjzHzpzg"; 
 
 const chatbotFab = document.getElementById('chatbot-fab');
 const chatbotWindow = document.getElementById('chatbot-window');
