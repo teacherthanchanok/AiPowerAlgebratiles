@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Algebra Tiles by Kru Zack</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="toolbar" id="toolbar">
+    <strong class="brand">Algebra Tiles by Kru Zack</strong>
+    <button class="btn" id="btn-reset">จัดระเบียบ</button>
+    <button class="btn" id="btn-delete">ลบ</button>
+    <button class="btn" id="btn-flip">พลิกด้าน</button>
+    <button class="btn" id="btn-zero">จับคู่เป็นศูนย์</button>
+    <button class="btn" id="btn-rotate">หมุน</button>
+    <button class="btn" id="btn-duplicate">เพิ่มจำนวน</button>
+    <button class="btn" id="btn-solution">เฉลย</button>
+    <button class="btn" id="btn-zoom-out" title="ซูมออก">🔍−</button>
+    <button class="btn" id="btn-zoom-in"  title="ซูมเข้า">🔍＋</button>
+
+    <select id="mode" title="เลือกเมนู">
+      <option value="int_add">การบวกจำนวนเต็ม</option>
+      <option value="int_sub">การลบจำนวนเต็ม</option>
+      <option value="int_mul">การคูณจำนวนเต็ม</option>
+      <option value="int_div">การหารจำนวนเต็ม</option>
+      <option value="poly_add">การบวกพหุนาม</option>
+      <option value="poly_sub">การลบพหุนาม</option>
+      <option value="poly_mul">การคูณพหุนาม</option>
+      <option value="poly_div">การหารพหุนาม</option>
+      <option value="solve_lin">การแก้สมการ</option>
+    </select>
+
+    <!-- 📖 ใหม่: ปุ่มลิงก์แบบฝึก/แบบทดสอบ (อยู่ก่อน ? ตามที่ขอ) -->
+    <button class="btn" id="btn-links" title="ลิงก์แบบทดสอบ/แบบฝึก">📖</button>
+
+    <button class="btn help-btn" id="btn-help">?</button>
+  </div>
+
+  <!-- แถวโจทย์ (พื้นหลังขาวเสมอ) -->
+  <div class="row row-top">
+    <!-- 💡 ใหม่: ปุ่มวิดีโอ อยู่หน้าปุ่ม 'โจทย์ใหม่' -->
+    <button class="btn btn-inline" id="btn-video" title="วิดีโอประกอบ">💡</button>
+    <button class="btn btn-inline" id="btn-new">โจทย์ใหม่</button>
+    <div class="lbl">โจทย์:</div>
+    <div id="problem" class="prob"></div>
+    <div class="eq">=</div>
+    <input type="text" id="answerInput" placeholder="พิมพ์คำตอบ" />
+    <button class="btn btn-inline" id="btn-check">ตรวจสอบคำตอบ</button>
+    <div id="checkResult" class="check-msg"></div>
+    <div id="solution" class="solution"></div>
+  </div>
+
+  <!-- แถว "จัดรูปสมการ/กำหนดโจทย์ด้วยตนเอง" -->
+  <div class="row row-normalize">
+    <input id="normalizeInput" type="text" placeholder="จัดรูปสมการ/กำหนดโจทย์ด้วยตนเอง" />
+  </div>
+
+  <div class="wrap">
+    <aside class="palette" id="palette">
+      <div class="pal-title">กระเบื้องพีชคณิต</div>
+      <div class="pal-item" data-type="x2"><div class="pal-chip chip-x2"></div><span>x<sup>2</sup></span></div>
+      <div class="pal-item" data-type="neg_x2"><div class="pal-chip chip-negx2"></div><span>-x<sup>2</sup></span></div>
+      <div class="pal-item" data-type="x"><div class="pal-chip chip-x"></div><span>x</span></div>
+      <div class="pal-item" data-type="neg_x"><div class="pal-chip chip-negx"></div><span>-x</span></div>
+      <div class="pal-item" data-type="one"><div class="pal-chip chip-one"></div><span>1</span></div>
+      <div class="pal-item" data-type="neg_one"><div class="pal-chip chip-negone"></div><span>-1</span></div>
+      <div class="pal-note">* ต้องการจำนวนตรงข้ามใช้ปุ่ม “พลิกด้าน”</div>
+    </aside>
+
+    <section class="board-wrap">
+      <div class="board" id="board">
+        <!-- Workspaces -->
+        <div class="ws" id="ws-solve"><div class="midline"></div></div>
+
+        <div class="ws" id="ws-mul">
+          <div class="table2x2" id="mul-table">
+            <div class="cell" id="mul-op">×</div>
+            <div class="cell" id="mul-mult">?</div>
+            <div class="cell" id="mul-mcand">?</div>
+            <div class="cell"></div>
+          </div>
+        </div>
+
+        <div class="ws" id="ws-div">
+          <div class="table2x2">
+            <div class="cell" id="div-op">÷</div>
+            <div class="cell"><input id="div-quot" placeholder="?" /></div>
+            <div class="cell" id="div-divisor">?</div>
+            <div class="cell"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Help popup (เดิม) -->
+  <div class="modal" id="help" style="display:none">
+    <div class="card">
+      <button class="close-x" id="help-x" title="ปิด">×</button>
+      <div class="help-title">วิธีใช้งาน Algebra Tiles</div>
+      <ul class="help-list">
+        <li>ลากชิ้นส่วนจากแถบซ้ายเข้าสู่กระดานได้ไม่จำกัด</li>
+        <li>คลิกค้างแล้วลากบนพื้นที่ว่างเพื่อเลือกคลุมหลายชิ้น</li>
+        <li>ปุ่ม “พลิกด้าน” เปลี่ยนเป็นค่าตรงข้าม, “จับคู่เป็นศูนย์” ลบคู่ตรงข้าม, “หมุน” ใช้กับสี่เหลี่ยมผืนผ้า, “เพิ่มจำนวน” เพิ่มชิ้นที่เลือกเป็นเท่าตัว</li>
+        <li>ปุ่ม “จัดระเบียบ” เคลียร์กระดานและรีเซ็ตซูม</li>
+        <li><b>หากต้องการพิมพ์กำลังสอง ให้พิมพ์ x^2</b></li>
+      </ul>
+      <div class="video-wrap">
+        <iframe id="ytframe" src="https://www.youtube.com/embed/vpPespGMeJE?si=GV-CuAATJsl0WBsF" title="Algebra Tiles" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
+      <div class="credit">
+        <div><b>จัดทำโดย นางสาวธัญชนก แย้มมาก</b></div>
+        <div>โรงเรียนบางแม่หม้ายรัฐราษฎร์รังสฤษดิ์</div>
+      </div>
+      <div class="contact-row">
+        <a class="btn contact" href="https://line.me/ti/p/4X5zjQ9EjJ" target="_blank" rel="noopener">📞 ติดต่อคุณครู</a>
+      </div>
+    </div>
+  </div>
+
+  <!-- 📖 ใหม่: Modal ลิสต์ลิงก์แบบฝึก/แบบทดสอบ -->
+  <div class="modal" id="linksModal" style="display:none">
+    <div class="card">
+      <button class="close-x" id="links-x" title="ปิด">×</button>
+      <div class="help-title">ลิงก์แบบทดสอบ & แบบฝึกหัด</div>
+      <ul class="link-list">
+        <li><a href="https://forms.gle/818MfCDrbNQfdMBm7" target="_blank" rel="noopener">❤️ แบบทดสอบก่อนเรียน</a></li>
+        <li><a href="https://forms.gle/JLXqbHbDKG12RpmY8" target="_blank" rel="noopener">⭐️ แบบฝึกหัดการบวกจำนวนเต็ม</a></li>
+        <li><a href="https://forms.gle/oYqZLsq1RMaKcrFX6" target="_blank" rel="noopener">⭐️ แบบฝึกหัดการลบจำนวนเต็ม</a></li>
+        <li><a href="https://forms.gle/qfwQaxs6K9KEcmaw6" target="_blank" rel="noopener">⭐️ แบบฝึกหัดการคูณจำนวนเต็ม</a></li>
+        <li><a href="https://forms.gle/WBaGoTexFzNt9w9i9" target="_blank" rel="noopener">⭐️ แบบฝึกหัดการหารจำนวนเต็ม</a></li>
+        <li><a href="https://forms.gle/jsnznmtCcZ7otEiVA" target="_blank" rel="noopener">⭐️ แบบฝึกหัดการบวกพหุนาม</a></li>
+        <li><a href="https://forms.gle/8VUK4tHpqWnLNnms7" target="_blank" rel="noopener">⭐️ แบบฝึกหัดการลบพหุนาม</a></li>
+        <li><a href="https://forms.gle/NRzCfoy2KXek35588" target="_blank" rel="noopener">⭐️ แบบฝึกหัดการคูณพหุนาม</a></li>
+        <li><a href="https://forms.gle/cFQrnprQStT1dk9R8" target="_blank" rel="noopener">⭐️ แบบฝึกหัดการหารพหุนาม</a></li>
+        <li><a href="https://forms.gle/xcFV5qLafb8AqEgFA" target="_blank" rel="noopener">⭐️ แบบฝึกหัดการแก้สมการ</a></li>
+        <li><a href="https://quiz.zep.us/th/play/JdxP7M" target="_blank" rel="noopener">🎮 เกมทบทวนบทเรียน</a></li>
+        <li><a href="https://forms.gle/zghZCqu8qJ1abyxm7" target="_blank" rel="noopener">❤️ แบบทดสอบหลังเรียน</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- 💡 ใหม่: Modal วิดีโอ YouTube -->
+  <div class="modal" id="videoModal" style="display:none">
+    <div class="card">
+      <button class="close-x" id="video-x" title="ปิด">×</button>
+      <div class="help-title">วิดีโอประกอบการสอน</div>
+      <div class="video-wrap">
+        <iframe id="videoFrame" src="" title="Lesson Video" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
